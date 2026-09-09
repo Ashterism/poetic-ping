@@ -13,8 +13,7 @@ export async function db<T>(env: Env, path: string, options: DbOptions = {}): Pr
   const response = await fetch(url, {
     method: options.method ?? "GET",
     headers: {
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: env.SUPABASE_SECRET_KEY,
       "Content-Type": "application/json",
       ...(options.prefer ? { Prefer: options.prefer } : {}),
     },

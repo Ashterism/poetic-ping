@@ -51,10 +51,10 @@ Worker setup:
 
 ```bash
 cd apps/worker
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler deploy --dry-run
 ```
 
-Add the non-secret values in `apps/worker/wrangler.jsonc`, then set the service-role secret. The Cron runs every 15 minutes in UTC; the code converts each user's configured IANA timezone before deciding whether their local delivery time is due. Add a Resend key and verified sender to deliver email. Without those values, the Worker records a clear delivery failure rather than pretending an email was sent.
+Add the non-secret values in `apps/worker/wrangler.jsonc`, then set a Supabase `sb_secret_...` key as the Worker secret. The Cron runs every 15 minutes in UTC; the code converts each user's configured IANA timezone before deciding whether their local delivery time is due. Add a Resend key and verified sender to deliver email. Without those values, the Worker records a clear delivery failure rather than pretending an email was sent.
 
 See [docs/setup.md](docs/setup.md) for the remaining ZITADEL and Cloudflare dashboard steps.

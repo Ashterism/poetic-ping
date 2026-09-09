@@ -1,2 +1,2 @@
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_SECRET_KEY=your-supabase-secret-key
 RESEND_API_KEY=your-resend-api-key

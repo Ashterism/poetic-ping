@@ -10,7 +10,7 @@ The production project already exists:
 - Region: London (`eu-west-2`)
 - Project cost: `$0/month`
 
-The initial migration is committed in `supabase/migrations`. It is also applied to the production project. Keep the service-role key in Worker secrets only. Never add it to Pages or any `VITE_*` variable.
+The initial migration is committed in `supabase/migrations`. It is also applied to the production project. Create a dedicated Supabase `sb_secret_...` key for the Worker and keep it in Worker secrets only. Never add it to Pages or any `VITE_*` variable.
 
 ## 2. ZITADEL
 
@@ -65,7 +65,7 @@ Update the placeholder values in `apps/worker/wrangler.jsonc`, then add secrets 
 
 ```bash
 cd apps/worker
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler secret put RESEND_API_KEY
 npx wrangler types worker-configuration.d.ts
 npx wrangler deploy --dry-run
