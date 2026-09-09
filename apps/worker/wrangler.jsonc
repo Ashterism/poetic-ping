@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "poetic-reminder-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "SUPABASE_URL": "https://cjxpbvrlwxkcmqdqdqbu.supabase.co",
+    "ZITADEL_ISSUER": "https://your-instance.zitadel.cloud",
+    "ZITADEL_AUDIENCE": "your-worker-api-project-id",
+    "ALLOWED_ORIGIN": "http://localhost:5173,https://poetic-reminder.pages.dev",
+    "FROM_EMAIL": "Poetic Reminder <reminders@example.com>"
+  },
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  }
+}

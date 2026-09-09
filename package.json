@@ -1,0 +1,22 @@
+{
+  "name": "poetic-reminder",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @poetic-reminder/web && npm run build --workspace @poetic-reminder/worker",
+    "build:web": "npm run build --workspace @poetic-reminder/web",
+    "dev:web": "npm run dev --workspace @poetic-reminder/web",
+    "dev:worker": "npm run dev --workspace @poetic-reminder/worker",
+    "test": "npm run test --workspace @poetic-reminder/worker",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "workerd": "1.20260815.1"
+  },
+  "allowScripts": {}
+}
