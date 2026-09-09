@@ -1,4 +1,4 @@
-# Poetic Reminder
+# Poetic Ping
 
 A small, multi-user app for birthday reminders and a weekly poem. It uses:
 
@@ -34,7 +34,7 @@ The frontend settings belong in `apps/web/.env.local`. Worker secrets belong in 
 
 The committed migration is in `supabase/migrations`. It creates profiles, birthdays, poems, tags, weekly preferences, and idempotent delivery history. All tables have RLS enabled; browser roles receive no access. Only the server-side `service_role` can use the Data API.
 
-The production project is `poetic-reminder` in Supabase organisation `Ashterism`, region `eu-west-2`.
+The production project is `poetic-ping` in Supabase organisation `Ashterism`, region `eu-west-2`.
 
 ## Cloudflare configuration
 

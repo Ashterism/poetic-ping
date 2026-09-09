@@ -1,15 +1,15 @@
 {
-  "name": "poetic-reminder",
+  "name": "poetic-ping",
   "private": true,
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @poetic-reminder/web && npm run build --workspace @poetic-reminder/worker",
-    "build:web": "npm run build --workspace @poetic-reminder/web",
-    "dev:web": "npm run dev --workspace @poetic-reminder/web",
-    "dev:worker": "npm run dev --workspace @poetic-reminder/worker",
-    "test": "npm run test --workspace @poetic-reminder/worker",
+    "build": "npm run build --workspace @poetic-ping/web && npm run build --workspace @poetic-ping/worker",
+    "build:web": "npm run build --workspace @poetic-ping/web",
+    "dev:web": "npm run dev --workspace @poetic-ping/web",
+    "dev:worker": "npm run dev --workspace @poetic-ping/worker",
+    "test": "npm run test --workspace @poetic-ping/worker",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "engines": {

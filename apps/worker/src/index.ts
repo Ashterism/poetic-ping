@@ -24,7 +24,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(request, env) });
     const url = new URL(request.url);
-    if (url.pathname === "/health") return json({ ok: true, service: "poetic-reminder-api" }, request, env);
+    if (url.pathname === "/health") return json({ ok: true, service: "poetic-ping-api" }, request, env);
     if (url.pathname === "/__scheduled" && env.ENVIRONMENT === "production") return json({ error: "Not found." }, request, env, 404);
     if (!url.pathname.startsWith("/api/")) return json({ error: "Not found." }, request, env, 404);
     try {

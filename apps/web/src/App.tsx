@@ -62,7 +62,7 @@ export function App() {
       <main className="welcome">
         <div className="moon" aria-hidden="true">☾</div>
         <p className="eyebrow">A small ritual for remembering</p>
-        <h1>Poetic<br />Reminder</h1>
+        <h1>Poetic<br />Ping</h1>
         <p className="lede">Keep the people you love close, and let a poem find you each week.</p>
         {error && <p className="error">{error}</p>}
         <button className="primary" onClick={() => void userManager.signinRedirect()}>Begin</button>
@@ -73,7 +73,7 @@ export function App() {
   return (
     <div className="shell">
       <header>
-        <a className="brand" href="/">Poetic Reminder</a>
+        <a className="brand" href="/">Poetic Ping</a>
         <button className="text-button" onClick={() => void userManager.signoutRedirect()}>Sign out</button>
       </header>
       <main>

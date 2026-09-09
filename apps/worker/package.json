@@ -1,5 +1,5 @@
 {
-  "name": "@poetic-reminder/worker",
+  "name": "@poetic-ping/worker",
   "private": true,
   "version": "0.1.0",
   "type": "module",

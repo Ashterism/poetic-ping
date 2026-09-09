@@ -5,7 +5,7 @@
 The production project already exists:
 
 - Organisation: `Ashterism`
-- Project: `poetic-reminder`
+- Project: `poetic-ping`
 - Project ref: `cjxpbvrlwxkcmqdqdqbu`
 - Region: London (`eu-west-2`)
 - Project cost: `$0/month`
@@ -34,13 +34,13 @@ The frontend requests `openid profile email offline_access` plus the ZITADEL pro
 The initial provider adapter uses Resend. Verify a sending domain, then add these Worker secrets/settings:
 
 - Secret: `RESEND_API_KEY`
-- Setting: `FROM_EMAIL`, for example `Poetic Reminder <reminders@your-domain.example>`
+- Setting: `FROM_EMAIL`, for example `Poetic Ping <reminders@your-domain.example>`
 
 If email is not configured, the schedule still behaves safely: a delivery claim is recorded as failed and can be retried after configuration is corrected.
 
 ## 4. Cloudflare Pages
 
-Connect `Ashterism/poetic-reminder` only after the app commit is present.
+Connect `Ashterism/poetic-ping` only after the app commit is present.
 
 - Root directory: `apps/web`
 - Build command: `npm ci && npm run build`
