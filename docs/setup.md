@@ -47,13 +47,13 @@ The initial provider adapter uses Resend. Verify a sending domain, then add thes
 
 If email is not configured, the schedule still behaves safely: a delivery claim is recorded as failed and can be retried after configuration is corrected.
 
-## 4. Cloudflare Pages
+## 4. Cloudflare frontend
 
 Connect `Ashterism/poetic-ping` only after the app commit is present.
 
-- Root directory: `apps/web`
-- Build command: `npm ci && npm run build`
-- Output directory: `dist`
+- Repository path: `/`
+- Build command: `npm run build:web`
+- Deploy command: `npm run deploy:web`
 - Production branch: `main`
 - Custom domain: `poetic-ping.ashterix.com`
 

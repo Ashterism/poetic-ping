@@ -2,7 +2,7 @@
 
 A small, multi-user app for birthday reminders and a weekly poem. It uses:
 
-- Cloudflare Pages for the React frontend
+- Cloudflare Workers Static Assets for the React frontend
 - Cloudflare Workers for the authenticated API and scheduled delivery sweep
 - Supabase Postgres for application data and delivery history
 - ZITADEL OIDC (Authorization Code + PKCE) for sign-in
@@ -40,11 +40,11 @@ The production project is `poetic-ping` in Supabase organisation `Ashterism`, re
 
 Nothing in this repository deploys automatically.
 
-Pages settings:
+Frontend deployment settings:
 
-- Root directory: `apps/web`
-- Build command: `npm ci && npm run build`
-- Build output: `dist`
+- Repository path: `/`
+- Build command: `npm run build:web`
+- Deploy command: `npm run deploy:web`
 - Environment variables: the four `VITE_*` values from `apps/web/.env.example`
 
 Worker setup:
