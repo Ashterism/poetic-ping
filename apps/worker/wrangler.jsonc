@@ -7,8 +7,8 @@
   "vars": {
     "ENVIRONMENT": "production",
     "SUPABASE_URL": "https://cjxpbvrlwxkcmqdqdqbu.supabase.co",
-    "ZITADEL_ISSUER": "https://your-instance.zitadel.cloud",
-    "ZITADEL_AUDIENCE": "your-worker-api-project-id",
+    "ZITADEL_ISSUER": "https://ashterix-mkjzns.eu1.zitadel.cloud",
+    "ZITADEL_AUDIENCE": "390021886861484201",
     "ALLOWED_ORIGIN": "http://localhost:5173,https://poetic-ping.ashterix.com",
     "FROM_EMAIL": "Poetic Ping <reminders@example.com>"
   },

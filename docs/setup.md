@@ -14,10 +14,13 @@ The initial migration is committed in `supabase/migrations`. It is also applied 
 
 ## 2. ZITADEL
 
-Create or reuse a ZITADEL project, then create two applications:
+The production ZITADEL project and frontend application are:
 
-1. A **User Agent** application for the React SPA. Choose Authorization Code with PKCE and JWT access tokens.
-2. An **API** application representing the Worker. Use its project/app identifier as the audience.
+- Issuer: `https://ashterix-mkjzns.eu1.zitadel.cloud`
+- Project ID / API audience: `390021886861484201`
+- User Agent client ID: `390023471385649321`
+
+The **User Agent** application uses Authorization Code with PKCE, no client secret, and JWT access tokens. The frontend requests the ZITADEL project as the API audience.
 
 For local development register:
 
@@ -25,7 +28,7 @@ For local development register:
 - Post-logout URI: `http://localhost:5173`
 - Allowed origin: `http://localhost:5173`
 
-After the Pages hostname is known, add its HTTPS equivalents. Put the issuer, SPA client ID, and API audience into the frontend build variables and the issuer/audience into Worker variables. The audience must match on both sides.
+Put the issuer, SPA client ID, and API audience into the frontend build variables and the issuer/audience into Worker variables. The audience must match on both sides.
 
 Production ZITADEL URIs:
 
