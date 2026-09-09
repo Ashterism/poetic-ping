@@ -6,6 +6,8 @@
   ],
   "scripts": {
     "build": "npm run build --workspace @poetic-ping/web && npm run build --workspace @poetic-ping/worker",
+    "build:worker": "npm run build --workspace @poetic-ping/worker",
+    "deploy:worker": "npm run deploy --workspace @poetic-ping/worker",
     "build:web": "npm run build --workspace @poetic-ping/web",
     "dev:web": "npm run dev --workspace @poetic-ping/web",
     "dev:worker": "npm run dev --workspace @poetic-ping/worker",

@@ -71,6 +71,14 @@ npx wrangler types worker-configuration.d.ts
 npx wrangler deploy --dry-run
 ```
 
+For Cloudflare Workers Builds connected to the repository, use:
+
+- Build command: `npm run build:worker`
+- Deploy command: `npm run deploy:worker`
+- Repository path: `/`
+
+These explicit workspace commands keep the Worker build independent from the Pages frontend in the monorepo.
+
 The checked-in schedule is every 15 minutes. Cloudflare Cron is UTC-only, so each sweep converts the instant into every user's IANA timezone. A 30-minute due window plus a unique database idempotency key protects against Cron drift and at-least-once execution.
 
 When the dry run, test suite, and configuration values are correct, deploy the Worker. Then set `VITE_API_URL` on Pages to the Worker URL and deploy Pages.
