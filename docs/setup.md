@@ -27,6 +27,12 @@ For local development register:
 
 After the Pages hostname is known, add its HTTPS equivalents. Put the issuer, SPA client ID, and API audience into the frontend build variables and the issuer/audience into Worker variables. The audience must match on both sides.
 
+Production ZITADEL URIs:
+
+- Login redirect: `https://poetic-ping.ashterix.com/auth/callback`
+- Post-logout redirect: `https://poetic-ping.ashterix.com`
+- Allowed origin: `https://poetic-ping.ashterix.com`
+
 The frontend requests `openid profile email offline_access` plus the ZITADEL project-audience scope. The Worker verifies issuer, audience, expiry, signature, and subject with ZITADEL's rotating JWKS endpoint.
 
 ## 3. Email
@@ -46,6 +52,7 @@ Connect `Ashterism/poetic-ping` only after the app commit is present.
 - Build command: `npm ci && npm run build`
 - Output directory: `dist`
 - Production branch: `main`
+- Custom domain: `poetic-ping.ashterix.com`
 
 Add the variables from `apps/web/.env.example` with production values. Preview deployments need redirect URLs registered in ZITADEL; use a stable custom preview hostname if possible.
 
