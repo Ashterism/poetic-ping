@@ -34,7 +34,7 @@ function workingReminderDays(value: unknown): number[] {
 }
 
 async function listPoems(env: Env, userId: string): Promise<Array<Poem & { tags: Pick<Tag, "id" | "name">[] }>> {
-  const poems = await db<Poem[]>(env, "poems", { query: { select: "id,user_id,title,author,body,language,active,access_type,source_type,source_title,source_section,source_page,source_url,rights_note", or: `(user_id.eq.${userId},user_id.is.null)`, active: "eq.true", order: "created_at.desc" } });
+  const poems = await db<Poem[]>(env, "poems", { query: { select: "id,user_id,title,author,body,language,active,access_type,source_type,source_title,source_section,source_page,source_url,rights_note,attribution_year", or: `(user_id.eq.${userId},user_id.is.null)`, active: "eq.true", order: "created_at.desc" } });
   if (!poems.length) return [];
   const joins = await db<PoemTag[]>(env, "poem_tags", { query: { select: "poem_id,tag_id", poem_id: `in.(${poems.map((poem) => poem.id).join(",")})` } });
   const tagIds = [...new Set(joins.map((join) => join.tag_id))];
@@ -108,8 +108,9 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
       const accessType = input.access_type === undefined ? "private" : input.access_type;
       if (accessType !== "private") throw new HttpError(400, "User-added poems must be private. Public poems are curated separately.");
       const sourceUrl = stringField(input, "source_url", 2_000, false);
+      const attributionYear = input.attribution_year === null || input.attribution_year === undefined || input.attribution_year === "" ? null : integerField(input, "attribution_year", 1, 2100);
       if (sourceUrl && !/^https:\/\/[^\s]+$/i.test(sourceUrl)) throw new HttpError(400, "source_url must be an HTTPS URL.");
-      const rows = await db<Poem[]>(env, "poems", { method: "POST", prefer: "return=representation", body: { user_id: identity.id, title: stringField(input, "title", 200), author: stringField(input, "author", 160, false), body: stringField(input, "body", 20_000), language: typeof input.language === "string" ? input.language.slice(0, 12) : "en", access_type: "private", source_type: stringField(input, "source_type", 80, false), source_title: stringField(input, "source_title", 240, false), source_section: stringField(input, "source_section", 160, false), source_page: stringField(input, "source_page", 40, false), source_url: sourceUrl, rights_note: stringField(input, "rights_note", 500, false) } });
+      const rows = await db<Poem[]>(env, "poems", { method: "POST", prefer: "return=representation", body: { user_id: identity.id, title: stringField(input, "title", 200), author: stringField(input, "author", 160, false), body: stringField(input, "body", 20_000), language: typeof input.language === "string" ? input.language.slice(0, 12) : "en", access_type: "private", source_type: stringField(input, "source_type", 80, false), source_title: stringField(input, "source_title", 240, false), source_section: stringField(input, "source_section", 160, false), source_page: stringField(input, "source_page", 40, false), source_url: sourceUrl, rights_note: stringField(input, "rights_note", 500, false), attribution_year: attributionYear } });
       const poem = rows[0];
       if (!poem) throw new HttpError(502, "Poem could not be saved.");
       await attachTags(env, identity.id, poem.id, input.tags);

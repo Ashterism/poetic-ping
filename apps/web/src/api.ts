@@ -37,6 +37,7 @@ export type Poem = {
   source_page: string | null;
   source_url: string | null;
   rights_note: string | null;
+  attribution_year: number | null;
 };
 
 export type Preferences = {
