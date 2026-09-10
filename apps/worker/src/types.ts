@@ -28,6 +28,7 @@ export type Poem = {
   body: string;
   language: string;
   active: boolean;
+  access_type: "public" | "private";
 };
 
 export type Tag = { id: string; user_id: string | null; name: string; slug: string };

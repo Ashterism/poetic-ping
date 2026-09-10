@@ -145,7 +145,7 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
-      await api("/api/poems", { method: "POST", body: JSON.stringify({ title: form.get("title"), author: form.get("author") || null, body: form.get("body"), tags: String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean) }) });
+      await api("/api/poems", { method: "POST", body: JSON.stringify({ title: form.get("title"), author: form.get("author") || null, body: form.get("body"), access_type: "private", tags: String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean) }) });
       event.currentTarget.reset();
       await refresh();
     } catch (cause) { onError(cause instanceof Error ? cause.message : "Could not save poem."); }
@@ -161,6 +161,7 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
         <label>Author<input name="author" maxLength={160} /></label>
         <label>Poem<textarea name="body" required rows={9} /></label>
         <label>Tags<input name="tags" placeholder="hope, winter, friendship" /></label>
+        <p className="hint">Added poems are private to your account. Only curated public-domain poems are shared.</p>
         <button className="primary" type="submit">Place on shelf</button>
       </form>
     </section>

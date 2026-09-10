@@ -30,6 +30,7 @@ export type Poem = {
   body: string;
   language: string;
   tags: { id: string; name: string }[];
+  access_type: "public" | "private";
 };
 
 export type Preferences = {
