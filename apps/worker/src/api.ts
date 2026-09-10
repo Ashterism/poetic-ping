@@ -28,6 +28,11 @@ function reminderDays(value: unknown): number[] {
   return [...new Set(value as number[])];
 }
 
+function workingReminderDays(value: unknown): number[] {
+  if (!Array.isArray(value) || value.length > 10 || value.some((day) => !Number.isInteger(day) || day < 1 || day > 365)) throw new HttpError(400, "reminder_working_days_before must contain whole days between 1 and 365.");
+  return [...new Set(value as number[])];
+}
+
 async function listPoems(env: Env, userId: string): Promise<Array<Poem & { tags: Pick<Tag, "id" | "name">[] }>> {
   const poems = await db<Poem[]>(env, "poems", { query: { select: "id,user_id,title,author,body,language,active", or: `(user_id.eq.${userId},user_id.is.null)`, active: "eq.true", order: "created_at.desc" } });
   if (!poems.length) return [];
@@ -74,12 +79,12 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
   }
 
   if (resource === "birthdays") {
-    if (!id && request.method === "GET") return db<Birthday[]>(env, "birthdays", { query: { select: "id,user_id,person_name,birth_date,relationship,notes,reminder_days_before,active", user_id: `eq.${identity.id}`, order: "birth_date.asc" } });
+    if (!id && request.method === "GET") return db<Birthday[]>(env, "birthdays", { query: { select: "id,user_id,person_name,birth_date,relationship,notes,reminder_days_before,reminder_working_days_before,active", user_id: `eq.${identity.id}`, order: "birth_date.asc" } });
     if (!id && request.method === "POST") {
       const input = await body(request);
       const birthDate = stringField(input, "birth_date", 10)!;
       if (!validDate(birthDate)) throw new HttpError(400, "birth_date must be a real YYYY-MM-DD date.");
-      const rows = await db<Birthday[]>(env, "birthdays", { method: "POST", prefer: "return=representation", body: { user_id: identity.id, person_name: stringField(input, "person_name", 120), birth_date: birthDate, relationship: stringField(input, "relationship", 80, false), notes: stringField(input, "notes", 2000, false), reminder_days_before: reminderDays(input.reminder_days_before ?? [7, 0]) } });
+      const rows = await db<Birthday[]>(env, "birthdays", { method: "POST", prefer: "return=representation", body: { user_id: identity.id, person_name: stringField(input, "person_name", 120), birth_date: birthDate, relationship: stringField(input, "relationship", 80, false), notes: stringField(input, "notes", 2000, false), reminder_days_before: reminderDays(input.reminder_days_before ?? [0]), reminder_working_days_before: workingReminderDays(input.reminder_working_days_before ?? []) } });
       return rows[0];
     }
     if (id && uuid.test(id) && request.method === "DELETE") {
@@ -90,7 +95,7 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
       const input = await body(request);
       const birthDate = stringField(input, "birth_date", 10)!;
       if (!validDate(birthDate)) throw new HttpError(400, "birth_date must be a real YYYY-MM-DD date.");
-      const rows = await db<Birthday[]>(env, "birthdays", { method: "PATCH", query: { id: `eq.${id}`, user_id: `eq.${identity.id}` }, prefer: "return=representation", body: { person_name: stringField(input, "person_name", 120), birth_date: birthDate, relationship: stringField(input, "relationship", 80, false), notes: stringField(input, "notes", 2000, false), reminder_days_before: reminderDays(input.reminder_days_before), active: booleanField(input, "active") } });
+      const rows = await db<Birthday[]>(env, "birthdays", { method: "PATCH", query: { id: `eq.${id}`, user_id: `eq.${identity.id}` }, prefer: "return=representation", body: { person_name: stringField(input, "person_name", 120), birth_date: birthDate, relationship: stringField(input, "relationship", 80, false), notes: stringField(input, "notes", 2000, false), reminder_days_before: reminderDays(input.reminder_days_before), reminder_working_days_before: workingReminderDays(input.reminder_working_days_before ?? []), active: booleanField(input, "active") } });
       if (!rows[0]) throw new HttpError(404, "Birthday not found.");
       return rows[0];
     }

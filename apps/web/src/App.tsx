@@ -111,7 +111,7 @@ function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: ()
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
-      await api("/api/birthdays", { method: "POST", body: JSON.stringify({ person_name: form.get("name"), birth_date: form.get("date"), relationship: form.get("relationship") || null, reminder_days_before: [7, 0] }) });
+      await api("/api/birthdays", { method: "POST", body: JSON.stringify({ person_name: form.get("name"), birth_date: form.get("date"), relationship: form.get("relationship") || null, reminder_days_before: form.get("two_weeks") === "on" ? [14, 0] : [0], reminder_working_days_before: form.get("working_days") === "on" ? [3] : [] }) });
       event.currentTarget.reset();
       await refresh();
     } catch (cause) { onError(cause instanceof Error ? cause.message : "Could not add birthday."); }
@@ -133,6 +133,7 @@ function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: ()
         <label>Name<input name="name" required maxLength={120} placeholder="Ada" /></label>
         <label>Birthday<input name="date" type="date" required /></label>
         <label>Relationship<input name="relationship" maxLength={80} placeholder="Friend, sister, neighbour…" /></label>
+        <fieldset><legend>Reminders</legend><label className="check"><input name="working_days" type="checkbox" /> 3 working days before</label><label className="check"><input name="two_weeks" type="checkbox" /> 2 weeks before</label><small>Everyone gets a reminder on the day.</small></fieldset>
         <button className="primary" type="submit">Keep this date</button>
       </form>
     </section>

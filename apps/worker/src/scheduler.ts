@@ -36,6 +36,20 @@ function birthdayMatches(local: LocalParts, birthDate: string, daysBefore: numbe
   return upcoming.getUTCMonth() + 1 === birthMonth && upcoming.getUTCDate() === adjustedDay;
 }
 
+function workingDaysBeforeMatches(local: LocalParts, birthDate: string, daysBefore: number): boolean {
+  const target = new Date(Date.UTC(local.year, local.month - 1, local.day));
+  let remaining = daysBefore;
+  while (remaining > 0) {
+    target.setUTCDate(target.getUTCDate() + 1);
+    const weekday = target.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) remaining -= 1;
+  }
+  const [, monthText, dayText] = birthDate.split("-");
+  const month = Number(monthText), day = Number(dayText);
+  const adjustedDay = month === 2 && day === 29 && !isLeap(target.getUTCFullYear()) ? 28 : day;
+  return target.getUTCMonth() + 1 === month && target.getUTCDate() === adjustedDay;
+}
+
 async function digestIndex(seed: string, length: number): Promise<number> {
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(seed)));
   const number = ((digest[0] ?? 0) << 24) | ((digest[1] ?? 0) << 16) | ((digest[2] ?? 0) << 8) | (digest[3] ?? 0);
@@ -97,7 +111,7 @@ export async function runSchedule(env: Env, at: Date): Promise<{ checked: number
     try {
       const local = localParts(at, profile.timezone);
       const [birthdays, preferences, preferenceTags] = await Promise.all([
-        db<Birthday[]>(env, "birthdays", { query: { select: "id,user_id,person_name,birth_date,relationship,notes,reminder_days_before,active", user_id: `eq.${profile.id}`, active: "eq.true" } }),
+        db<Birthday[]>(env, "birthdays", { query: { select: "id,user_id,person_name,birth_date,relationship,notes,reminder_days_before,reminder_working_days_before,active", user_id: `eq.${profile.id}`, active: "eq.true" } }),
         db<WeeklyPreference[]>(env, "weekly_preferences", { query: { select: "user_id,enabled,weekday,local_time", user_id: `eq.${profile.id}`, limit: "1" } }),
         db<{ tag_id: string }[]>(env, "weekly_preference_tags", { query: { select: "tag_id", user_id: `eq.${profile.id}` } }),
       ]);
@@ -107,6 +121,11 @@ export async function runSchedule(env: Env, at: Date): Promise<{ checked: number
           for (const days of birthday.reminder_days_before) {
             if (!birthdayMatches(local, birthday.birth_date, days)) continue;
             const key = `birthday:${birthday.id}:${local.dateKey}:${days}`;
+            if (await deliver(env, profile, { birthday, type: "birthday", key, tagIds, at })) sent += 1;
+          }
+          for (const days of birthday.reminder_working_days_before ?? []) {
+            if (!workingDaysBeforeMatches(local, birthday.birth_date, days)) continue;
+            const key = `birthday:${birthday.id}:${local.dateKey}:working-${days}`;
             if (await deliver(env, profile, { birthday, type: "birthday", key, tagIds, at })) sent += 1;
           }
         }

@@ -16,6 +16,7 @@ export type Birthday = {
   relationship: string | null;
   notes: string | null;
   reminder_days_before: number[];
+  reminder_working_days_before: number[];
   active: boolean;
 };
 
