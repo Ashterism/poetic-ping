@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "oidc-client-ts";
 import { api, Birthday, Poem, Preferences, Profile } from "./api";
 import { userManager } from "./auth";
@@ -159,13 +159,18 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<"all" | "public" | "private">("all");
   const [category, setCategory] = useState("all");
+  const [order, setOrder] = useState<"title" | "author" | "access">("title");
   const categories = [...new Set(items.flatMap((poem) => poem.tags.map((tag) => tag.name)))].sort();
-  const visible = items.filter((poem) => {
+  const visible = useMemo(() => items.filter((poem) => {
     const searchable = `${poem.title} ${poem.author ?? ""} ${poem.body} ${poem.tags.map((tag) => tag.name).join(" ")}`.toLowerCase();
     return (visibility === "all" || poem.access_type === visibility)
       && (category === "all" || poem.tags.some((tag) => tag.name === category))
       && searchable.includes(query.trim().toLowerCase());
-  });
+  }).sort((left, right) => {
+    if (order === "author") return (left.author ?? "").localeCompare(right.author ?? "", undefined, { sensitivity: "base" }) || left.title.localeCompare(right.title, undefined, { sensitivity: "base" });
+    if (order === "access") return left.access_type.localeCompare(right.access_type) || left.title.localeCompare(right.title, undefined, { sensitivity: "base" });
+    return left.title.localeCompare(right.title, undefined, { sensitivity: "base" });
+  }), [items, visibility, category, query, order]);
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -178,8 +183,8 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
   return (
     <section className="panel-grid">
       <div className="card list-card"><div className="section-title"><div><p className="eyebrow">Your collection</p><h2>Poems</h2></div><span>{visible.length}</span></div>
-        <div className="library-filters"><input aria-label="Search poems" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, poet, category…" /><select aria-label="Access filter" value={visibility} onChange={(event) => setVisibility(event.target.value as "all" | "public" | "private")}><option value="all">All access</option><option value="public">Shared catalogue</option><option value="private">My private poems</option></select><select aria-label="Category filter" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((name) => <option key={name}>{name}</option>)}</select></div>
-        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : visible.length === 0 ? <p className="empty">No poems match those filters.</p> : visible.map((poem) => <article className="poem" key={poem.id}><div className="poem-heading"><div><h3>{poem.title}</h3><p className="byline">{poem.author || "Unknown author"}</p></div><span className={`access ${poem.access_type}`}>{poem.access_type === "public" ? "Shared" : "Private"}</span></div><p>{poem.body}</p>{(poem.source_title || poem.source_url) && <p className="source">{poem.source_title ? `Source: ${poem.source_title}` : "Source"}{poem.source_section ? ` · ${poem.source_section}` : ""}{poem.source_page ? ` · p. ${poem.source_page}` : ""}{poem.source_url && <> · <a href={poem.source_url} target="_blank" rel="noreferrer">Open source</a></>}</p>}<div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></article>)}
+        <div className="library-filters"><input aria-label="Search poems" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, poet, category…" /><select aria-label="Access filter" value={visibility} onChange={(event) => setVisibility(event.target.value as "all" | "public" | "private")}><option value="all">All access</option><option value="public">Shared catalogue</option><option value="private">My private poems</option></select><select aria-label="Category filter" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((name) => <option key={name}>{name}</option>)}</select><select aria-label="Sort poems" value={order} onChange={(event) => setOrder(event.target.value as "title" | "author" | "access")}><option value="title">Title A–Z</option><option value="author">Poet A–Z</option><option value="access">Access type</option></select></div>
+        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : visible.length === 0 ? <p className="empty">No poems match those filters.</p> : visible.map((poem) => <article className="poem" key={poem.id}><details><summary><div className="poem-heading"><div><h3>{poem.title}</h3><p className="byline">{poem.author || "Unknown author"}</p></div><span className={`access ${poem.access_type}`}>{poem.access_type === "public" ? "Shared" : "Private"}</span></div></summary><div className="poem-content"><p>{poem.body}</p>{(poem.source_title || poem.source_url) && <p className="source">{poem.source_title ? `Source: ${poem.source_title}` : "Source"}{poem.source_section ? ` · ${poem.source_section}` : ""}{poem.source_page ? ` · p. ${poem.source_page}` : ""}{poem.source_url && <> · <a href={poem.source_url} target="_blank" rel="noreferrer">Open source</a></>}</p>}<div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></div></details></article>)}
       </div>
       <form className="card form-card" onSubmit={add}>
         <p className="eyebrow">A new page</p><h2>Add a poem</h2>
