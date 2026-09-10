@@ -141,19 +141,30 @@ function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: ()
 }
 
 function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Promise<void>; onError: (value: string) => void }) {
+  const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<"all" | "public" | "private">("all");
+  const [category, setCategory] = useState("all");
+  const categories = [...new Set(items.flatMap((poem) => poem.tags.map((tag) => tag.name)))].sort();
+  const visible = items.filter((poem) => {
+    const searchable = `${poem.title} ${poem.author ?? ""} ${poem.body} ${poem.tags.map((tag) => tag.name).join(" ")}`.toLowerCase();
+    return (visibility === "all" || poem.access_type === visibility)
+      && (category === "all" || poem.tags.some((tag) => tag.name === category))
+      && searchable.includes(query.trim().toLowerCase());
+  });
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
-      await api("/api/poems", { method: "POST", body: JSON.stringify({ title: form.get("title"), author: form.get("author") || null, body: form.get("body"), access_type: "private", tags: String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean) }) });
+      await api("/api/poems", { method: "POST", body: JSON.stringify({ title: form.get("title"), author: form.get("author") || null, body: form.get("body"), access_type: "private", source_type: form.get("source_type") || null, source_title: form.get("source_title") || null, source_section: form.get("source_section") || null, source_page: form.get("source_page") || null, source_url: form.get("source_url") || null, rights_note: form.get("rights_note") || null, tags: String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean) }) });
       event.currentTarget.reset();
       await refresh();
     } catch (cause) { onError(cause instanceof Error ? cause.message : "Could not save poem."); }
   }
   return (
     <section className="panel-grid">
-      <div className="card list-card"><div className="section-title"><div><p className="eyebrow">Your collection</p><h2>Poems</h2></div><span>{items.length}</span></div>
-        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : items.map((poem) => <article className="poem" key={poem.id}><h3>{poem.title}</h3><p className="byline">{poem.author || "Unknown author"}</p><p>{poem.body}</p><div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></article>)}
+      <div className="card list-card"><div className="section-title"><div><p className="eyebrow">Your collection</p><h2>Poems</h2></div><span>{visible.length}</span></div>
+        <div className="library-filters"><input aria-label="Search poems" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, poet, category…" /><select aria-label="Access filter" value={visibility} onChange={(event) => setVisibility(event.target.value as "all" | "public" | "private")}><option value="all">All access</option><option value="public">Shared catalogue</option><option value="private">My private poems</option></select><select aria-label="Category filter" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((name) => <option key={name}>{name}</option>)}</select></div>
+        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : visible.length === 0 ? <p className="empty">No poems match those filters.</p> : visible.map((poem) => <article className="poem" key={poem.id}><div className="poem-heading"><div><h3>{poem.title}</h3><p className="byline">{poem.author || "Unknown author"}</p></div><span className={`access ${poem.access_type}`}>{poem.access_type === "public" ? "Shared" : "Private"}</span></div><p>{poem.body}</p>{(poem.source_title || poem.source_url) && <p className="source">{poem.source_title ? `Source: ${poem.source_title}` : "Source"}{poem.source_section ? ` · ${poem.source_section}` : ""}{poem.source_page ? ` · p. ${poem.source_page}` : ""}{poem.source_url && <> · <a href={poem.source_url} target="_blank" rel="noreferrer">Open source</a></>}</p>}<div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></article>)}
       </div>
       <form className="card form-card" onSubmit={add}>
         <p className="eyebrow">A new page</p><h2>Add a poem</h2>
@@ -161,6 +172,7 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
         <label>Author<input name="author" maxLength={160} /></label>
         <label>Poem<textarea name="body" required rows={9} /></label>
         <label>Tags<input name="tags" placeholder="hope, winter, friendship" /></label>
+        <details><summary>Source details (optional)</summary><label>Source type<input name="source_type" placeholder="Book, website, anthology…" /></label><label>Book or publication<input name="source_title" /></label><div className="two"><label>Section<input name="source_section" /></label><label>Page<input name="source_page" /></label></div><label>Source URL<input name="source_url" type="url" placeholder="https://…" /></label><label>Rights note<input name="rights_note" placeholder="Personal copy, subscription, permission…" /></label></details>
         <p className="hint">Added poems are private to your account. Only curated public-domain poems are shared.</p>
         <button className="primary" type="submit">Place on shelf</button>
       </form>

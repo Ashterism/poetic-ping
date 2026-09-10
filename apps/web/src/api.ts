@@ -31,6 +31,12 @@ export type Poem = {
   language: string;
   tags: { id: string; name: string }[];
   access_type: "public" | "private";
+  source_type: string | null;
+  source_title: string | null;
+  source_section: string | null;
+  source_page: string | null;
+  source_url: string | null;
+  rights_note: string | null;
 };
 
 export type Preferences = {
