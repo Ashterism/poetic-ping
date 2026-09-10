@@ -1,6 +1,8 @@
 import { accessToken } from "./auth";
 
-const baseUrl = import.meta.env.VITE_API_URL.replace(/\/$/, "");
+// Keep the hosted build functional even when Cloudflare's static deployment
+// does not inject Vite environment variables.
+const baseUrl = (import.meta.env.VITE_API_URL || "https://api.poetic-ping.ashterix.com").replace(/\/$/, "");
 
 export type Profile = {
   id: string;
