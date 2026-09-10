@@ -4,6 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-09",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
   "vars": {
     "ENVIRONMENT": "production",
     "SUPABASE_URL": "https://cjxpbvrlwxkcmqdqdqbu.supabase.co",
@@ -12,6 +14,12 @@
     "ALLOWED_ORIGIN": "http://localhost:5173,https://poetic-ping.ashterix.com",
     "FROM_EMAIL": "Poetic Ping <reminders@example.com>"
   },
+  "routes": [
+    {
+      "pattern": "api.poetic-ping.ashterix.com",
+      "custom_domain": true
+    }
+  ],
   "triggers": { "crons": ["*/15 * * * *"] },
   "observability": {
     "enabled": true,
