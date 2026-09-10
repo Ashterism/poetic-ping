@@ -16,6 +16,20 @@ function friendlyDate(value: string): string {
   );
 }
 
+function birthdayMonthDay(value: string): number {
+  const [, month = "0", day = "0"] = value.split("-");
+  return Number(month) * 100 + Number(day);
+}
+
+function birthdaySeason(value: string): "winter" | "spring" | "summer" | "autumn" {
+  const [, month = "0"] = value.split("-");
+  const number = Number(month);
+  if (number === 12 || number <= 2) return "winter";
+  if (number <= 5) return "spring";
+  if (number <= 8) return "summer";
+  return "autumn";
+}
+
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<Dashboard | null>(null);
@@ -107,6 +121,7 @@ function DashboardView({ data, refresh, onError }: { data: Dashboard; refresh: (
 }
 
 function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: () => Promise<void>; onError: (value: string) => void }) {
+  const ordered = [...items].sort((left, right) => birthdayMonthDay(left.birth_date) - birthdayMonthDay(right.birth_date));
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -119,10 +134,10 @@ function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: ()
   return (
     <section className="panel-grid">
       <div className="card list-card">
-        <div className="section-title"><div><p className="eyebrow">The people you hold</p><h2>Birthdays</h2></div><span>{items.length}</span></div>
-        {items.length === 0 ? <p className="empty">No dates yet. Add the first person you never want to forget.</p> : items.map((birthday) => (
+        <div className="section-title"><div><p className="eyebrow">The people you hold</p><h2>Birthdays</h2></div><span>{ordered.length}</span></div>
+        {ordered.length === 0 ? <p className="empty">No dates yet. Add the first person you never want to forget.</p> : ordered.map((birthday) => (
           <article className="birthday" key={birthday.id}>
-            <div className="date-tile"><strong>{new Date(`${birthday.birth_date}T12:00:00`).getDate()}</strong><span>{new Date(`${birthday.birth_date}T12:00:00`).toLocaleString(undefined, { month: "short" })}</span></div>
+            <div className={`date-tile ${birthdaySeason(birthday.birth_date)}`}><strong>{new Date(`${birthday.birth_date}T12:00:00`).getDate()}</strong><span>{new Date(`${birthday.birth_date}T12:00:00`).toLocaleString(undefined, { month: "short" })}</span></div>
             <div><h3>{birthday.person_name}</h3><p>{birthday.relationship || "Someone dear"} · {friendlyDate(birthday.birth_date)}</p></div>
             <button className="delete" aria-label={`Remove ${birthday.person_name}`} onClick={() => void api(`/api/birthdays/${birthday.id}`, { method: "DELETE" }).then(refresh).catch((cause: Error) => onError(cause.message))}>×</button>
           </article>
