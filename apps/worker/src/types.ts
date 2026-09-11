@@ -6,6 +6,7 @@ export type Profile = {
   display_name: string | null;
   timezone: string;
   birthday_delivery_time: string;
+  birthday_reminders_enabled: boolean;
 };
 
 export type Birthday = {

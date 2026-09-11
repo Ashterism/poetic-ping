@@ -11,7 +11,7 @@ async function body(request: Request): Promise<Record<string, unknown>> {
 }
 
 async function bootstrapProfile(env: Env, identity: Identity): Promise<Profile> {
-  let rows = await db<Profile[]>(env, "profiles", { query: { select: "id,email,display_name,timezone,birthday_delivery_time", id: `eq.${identity.id}`, limit: "1" } });
+  let rows = await db<Profile[]>(env, "profiles", { query: { select: "id,email,display_name,timezone,birthday_delivery_time,birthday_reminders_enabled", id: `eq.${identity.id}`, limit: "1" } });
   if (!rows[0]) {
     rows = await db<Profile[]>(env, "profiles", { method: "POST", prefer: "return=representation", body: { id: identity.id, email: identity.email, display_name: identity.name } });
   } else if (rows[0].email !== identity.email) {
@@ -73,7 +73,7 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
       assertTimezone(timezone);
       if (!validTime(deliveryTime)) throw new HttpError(400, "birthday_delivery_time is invalid.");
       const displayName = stringField(input, "display_name", 120, false);
-      const rows = await db<Profile[]>(env, "profiles", { method: "PATCH", query: { id: `eq.${identity.id}` }, prefer: "return=representation", body: { display_name: displayName, timezone, birthday_delivery_time: deliveryTime } });
+      const rows = await db<Profile[]>(env, "profiles", { method: "PATCH", query: { id: `eq.${identity.id}` }, prefer: "return=representation", body: { display_name: displayName, timezone, birthday_delivery_time: deliveryTime, birthday_reminders_enabled: booleanField(input, "birthday_reminders_enabled") } });
       return rows[0];
     }
   }
@@ -146,7 +146,7 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
     }
   }
 
-  if (resource === "history" && !id && request.method === "GET") return db(env, "delivery_history", { query: { select: "id,birthday_id,poem_id,delivery_type,status,scheduled_for,sent_at,error_message", user_id: `eq.${identity.id}`, order: "created_at.desc", limit: "100" } });
+  if (resource === "history" && !id && request.method === "GET") return db(env, "delivery_history", { query: { select: "id,birthday_id,poem_id,delivery_type,status,recipient_email,scheduled_for,sent_at,error_message", user_id: `eq.${identity.id}`, order: "created_at.desc", limit: "100" } });
 
   throw new HttpError(404, "Not found.");
 }

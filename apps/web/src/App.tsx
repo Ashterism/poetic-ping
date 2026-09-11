@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "oidc-client-ts";
-import { api, Birthday, Poem, Preferences, Profile } from "./api";
+import { api, Birthday, Delivery, Poem, Preferences, Profile } from "./api";
 import { userManager } from "./auth";
 
 type Dashboard = {
@@ -8,6 +8,7 @@ type Dashboard = {
   birthdays: Birthday[];
   poems: Poem[];
   preferences: Preferences;
+  history: Delivery[];
 };
 
 function friendlyDate(value: string): string {
@@ -40,13 +41,14 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      const [profile, birthdays, poems, preferences] = await Promise.all([
+      const [profile, birthdays, poems, preferences, history] = await Promise.all([
         api<Profile>("/api/me"),
         api<Birthday[]>("/api/birthdays"),
         api<Poem[]>("/api/poems"),
         api<Preferences>("/api/preferences"),
+        api<Delivery[]>("/api/history"),
       ]);
-      setData({ profile, birthdays, poems, preferences });
+      setData({ profile, birthdays, poems, preferences, history });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
     } finally {
@@ -115,7 +117,7 @@ function DashboardView({ data, refresh, onError }: { data: Dashboard; refresh: (
       </nav>
       {tab === "birthdays" && <Birthdays items={data.birthdays} refresh={refresh} onError={onError} />}
       {tab === "poems" && <Poems items={data.poems} refresh={refresh} onError={onError} />}
-      {tab === "settings" && <Settings profile={data.profile} preferences={data.preferences} refresh={refresh} onError={onError} />}
+      {tab === "settings" && <Settings profile={data.profile} preferences={data.preferences} history={data.history} refresh={refresh} onError={onError} />}
     </>
   );
 }
@@ -201,26 +203,33 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
   );
 }
 
-function Settings({ profile, preferences, refresh, onError }: { profile: Profile; preferences: Preferences; refresh: () => Promise<void>; onError: (value: string) => void }) {
+function deliveryWhen(value: string): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
+function Settings({ profile, preferences, history, refresh, onError }: { profile: Profile; preferences: Preferences; history: Delivery[]; refresh: () => Promise<void>; onError: (value: string) => void }) {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
       await Promise.all([
-        api("/api/me", { method: "PUT", body: JSON.stringify({ display_name: form.get("display_name") || null, timezone: form.get("timezone"), birthday_delivery_time: form.get("birthday_delivery_time") }) }),
+        api("/api/me", { method: "PUT", body: JSON.stringify({ display_name: form.get("display_name") || null, timezone: form.get("timezone"), birthday_delivery_time: form.get("birthday_delivery_time"), birthday_reminders_enabled: form.get("birthday_reminders_enabled") === "on" }) }),
         api("/api/preferences", { method: "PUT", body: JSON.stringify({ enabled: form.get("enabled") === "on", weekday: Number(form.get("weekday")), local_time: form.get("local_time"), tag_ids: preferences.tag_ids }) }),
       ]);
       await refresh();
     } catch (cause) { onError(cause instanceof Error ? cause.message : "Could not save settings."); }
   }
   return (
-    <form className="card settings" onSubmit={save}>
-      <p className="eyebrow">How the notes find you</p><h2>Delivery settings</h2>
-      <div className="two"><label>Your name<input name="display_name" defaultValue={profile.display_name ?? ""} /></label><label>Email<input value={profile.email} disabled /></label></div>
-      <div className="two"><label>IANA timezone<input name="timezone" defaultValue={profile.timezone} required /></label><label>Birthday reminder time<input name="birthday_delivery_time" type="time" defaultValue={profile.birthday_delivery_time.slice(0, 5)} required /></label></div>
-      <label className="check"><input name="enabled" type="checkbox" defaultChecked={preferences.enabled} /> Send me one poem each week</label>
-      <div className="two"><label>Weekday<select name="weekday" defaultValue={preferences.weekday}>{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label><label>Poem time<input name="local_time" type="time" defaultValue={preferences.local_time.slice(0, 5)} required /></label></div>
-      <button className="primary" type="submit">Save settings</button>
-    </form>
+    <section className="settings-page">
+      <form className="card settings" onSubmit={save}>
+        <p className="eyebrow">How the notes find you</p><h2>Delivery settings</h2>
+        <div className="delivery-recipient"><span>Sending to</span><strong>{profile.email}</strong><small>Your sign-in email is the delivery address.</small></div>
+        <div className="two"><label>Your name<input name="display_name" defaultValue={profile.display_name ?? ""} /></label><label>Timezone<input name="timezone" defaultValue={profile.timezone} required /></label></div>
+        <fieldset><legend>Birthday reminders</legend><label className="check"><input name="birthday_reminders_enabled" type="checkbox" defaultChecked={profile.birthday_reminders_enabled} /> Send me birthday reminders</label><label>Reminder time<input name="birthday_delivery_time" type="time" defaultValue={profile.birthday_delivery_time.slice(0, 5)} required /></label></fieldset>
+        <fieldset><legend>Weekly poem</legend><label className="check"><input name="enabled" type="checkbox" defaultChecked={preferences.enabled} /> Send me one poem each week</label><div className="two"><label>Weekday<select name="weekday" defaultValue={preferences.weekday}>{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label><label>Poem time<input name="local_time" type="time" defaultValue={preferences.local_time.slice(0, 5)} required /></label></div></fieldset>
+        <button className="primary" type="submit">Save delivery settings</button>
+      </form>
+      <section className="card delivery-history"><p className="eyebrow">A record of each note</p><h2>Recent email activity</h2>{history.length === 0 ? <p className="empty">No emails have been sent yet.</p> : <div className="activity-list">{history.slice(0, 10).map((item) => <article className="activity" key={item.id}><div><strong>{item.delivery_type === "birthday" ? "Birthday reminder" : "Weekly poem"}</strong><p>{item.recipient_email} · {deliveryWhen(item.sent_at ?? item.scheduled_for)}</p>{item.error_message && <p className="activity-error">{item.error_message}</p>}</div><span className={`status ${item.status}`}>{item.status}</span></article>)}</div>}</section>
+    </section>
   );
 }

@@ -105,7 +105,7 @@ async function deliver(env: Env, profile: Profile, values: { birthday?: Birthday
 }
 
 export async function runSchedule(env: Env, at: Date): Promise<{ checked: number; sent: number }> {
-  const profiles = await db<Profile[]>(env, "profiles", { query: { select: "id,email,display_name,timezone,birthday_delivery_time" } });
+  const profiles = await db<Profile[]>(env, "profiles", { query: { select: "id,email,display_name,timezone,birthday_delivery_time,birthday_reminders_enabled" } });
   let sent = 0;
   for (const profile of profiles) {
     try {
@@ -116,7 +116,7 @@ export async function runSchedule(env: Env, at: Date): Promise<{ checked: number
         db<{ tag_id: string }[]>(env, "weekly_preference_tags", { query: { select: "tag_id", user_id: `eq.${profile.id}` } }),
       ]);
       const tagIds = preferenceTags.map((item) => item.tag_id);
-      if (inDeliveryWindow(local.minutes, profile.birthday_delivery_time)) {
+      if (profile.birthday_reminders_enabled && inDeliveryWindow(local.minutes, profile.birthday_delivery_time)) {
         for (const birthday of birthdays) {
           for (const days of birthday.reminder_days_before) {
             if (!birthdayMatches(local, birthday.birth_date, days)) continue;

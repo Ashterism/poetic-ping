@@ -10,6 +10,7 @@ export type Profile = {
   display_name: string | null;
   timezone: string;
   birthday_delivery_time: string;
+  birthday_reminders_enabled: boolean;
 };
 
 export type Birthday = {
@@ -45,6 +46,16 @@ export type Preferences = {
   weekday: number;
   local_time: string;
   tag_ids: string[];
+};
+
+export type Delivery = {
+  id: string;
+  delivery_type: "birthday" | "weekly_poem";
+  status: "pending" | "sent" | "failed" | "skipped";
+  recipient_email: string;
+  scheduled_for: string;
+  sent_at: string | null;
+  error_message: string | null;
 };
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
