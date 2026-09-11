@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { sendEmail } from "./email";
 import { Birthday, HttpError, Identity, Poem, PoemTag, Profile, Tag, WeeklyPreference } from "./types";
 import { assertTimezone, booleanField, integerField, objectBody, slug, stringField, validDate, validTime } from "./validation";
 
@@ -147,6 +148,29 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
   }
 
   if (resource === "history" && !id && request.method === "GET") return db(env, "delivery_history", { query: { select: "id,birthday_id,poem_id,delivery_type,status,recipient_email,scheduled_for,sent_at,error_message", user_id: `eq.${identity.id}`, order: "created_at.desc", limit: "100" } });
+
+  if (resource === "test-email" && !id && request.method === "POST") {
+    const poems = await db<Poem[]>(env, "poems", { query: { select: "id,user_id,title,author,body,language,active,access_type,source_type,source_title,source_section,source_page,source_url,rights_note,attribution_year", user_id: "is.null", active: "eq.true", order: "created_at.asc", limit: "1" } });
+    const poem = poems[0];
+    if (!poem) throw new HttpError(422, "Add a poem before sending a test email.");
+    const timestamp = new Date().toISOString();
+    const rows = await db<Array<{ id: string }>>(env, "delivery_history", {
+      method: "POST",
+      prefer: "return=representation",
+      body: { user_id: identity.id, poem_id: poem.id, delivery_type: "weekly_poem", recipient_email: profile.email, scheduled_for: timestamp, idempotency_key: `test:${identity.id}:${crypto.randomUUID()}` },
+    });
+    const delivery = rows[0];
+    if (!delivery) throw new HttpError(502, "The test delivery could not be recorded.");
+    try {
+      const providerId = await sendEmail(env, profile, poem);
+      await db(env, "delivery_history", { method: "PATCH", query: { id: `eq.${delivery.id}` }, body: { status: "sent", sent_at: new Date().toISOString(), provider_id: providerId } });
+      return { ok: true };
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Email delivery failed.";
+      await db(env, "delivery_history", { method: "PATCH", query: { id: `eq.${delivery.id}` }, body: { status: "failed", error_message: message.slice(0, 1000) } });
+      throw new HttpError(502, `The test email could not be sent: ${message}`);
+    }
+  }
 
   throw new HttpError(404, "Not found.");
 }
