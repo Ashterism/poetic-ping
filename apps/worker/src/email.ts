@@ -13,10 +13,13 @@ export async function sendEmail(env: Env, profile: Profile, poem: Poem | null, b
   const poemHtml = poem
     ? `<hr><h2>${escape(poem.title)}</h2><p><em>${escape(poem.author ?? "Unknown author")}</em></p><p style="white-space:pre-line;line-height:1.7">${escape(poem.body)}</p>`
     : "";
+  const feedback = env.FEEDBACK_EMAIL
+    ? `<p style="margin-top:26px"><a href="mailto:${encodeURIComponent(env.FEEDBACK_EMAIL)}?subject=${encodeURIComponent("Poetic Ping feedback")}" style="color:#7d3a2a">Share feedback</a></p>`
+    : "";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: env.FROM_EMAIL, to: [profile.email], subject, html: `<div style="font-family:Georgia,serif;max-width:620px;margin:auto;color:#28241f">${intro}${poemHtml}<p style="margin-top:32px;color:#81776d">Poetic Ping</p></div>` }),
+    body: JSON.stringify({ from: env.FROM_EMAIL, to: [profile.email], reply_to: env.FEEDBACK_EMAIL, subject, html: `<div style="font-family:Georgia,serif;max-width:620px;margin:auto;color:#28241f">${intro}${poemHtml}${feedback}<p style="margin-top:32px;color:#81776d">Poetic Ping</p></div>` }),
   });
   const result = await response.json<{ id?: string; message?: string }>();
   if (!response.ok || !result.id) throw new Error(result.message ?? `Email provider returned ${response.status}.`);

@@ -12,7 +12,8 @@
     "ZITADEL_ISSUER": "https://ashterix-mkjzns.eu1.zitadel.cloud",
     "ZITADEL_AUDIENCE": "390021886861484201",
     "ALLOWED_ORIGIN": "http://localhost:5173,https://poetic-ping.ashterix.com",
-    "FROM_EMAIL": "Poetic Ping <reminders@example.com>"
+    "FROM_EMAIL": "Poetic Ping <onboarding@resend.dev>",
+    "FEEDBACK_EMAIL": "ashbladon@gmail.com"
   },
   "routes": [
     {
