@@ -31,6 +31,38 @@ function birthdaySeason(value: string): "winter" | "spring" | "summer" | "autumn
   return "autumn";
 }
 
+function localDateKey(timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function upcomingBirthdayItems(items: Birthday[], timezone: string): Birthday[] {
+  const [year, month, day] = localDateKey(timezone).split("-").map(Number);
+  const today = new Date(year, month - 1, day);
+  return [...items].filter((item) => item.active).sort((left, right) => {
+    const next = (value: string) => {
+      const [, birthdayMonth, birthdayDay] = value.split("-").map(Number);
+      const date = new Date(year, birthdayMonth - 1, birthdayDay);
+      if (date < today) date.setFullYear(year + 1);
+      return date.getTime();
+    };
+    return next(left.birth_date) - next(right.birth_date);
+  });
+}
+
+function poemForToday(items: Poem[], timezone: string): Poem | null {
+  if (!items.length) return null;
+  const ordered = [...items].sort((left, right) => left.title.localeCompare(right.title, undefined, { sensitivity: "base" }));
+  const days = Math.floor(Date.parse(`${localDateKey(timezone)}T12:00:00Z`) / 86_400_000);
+  return ordered[days % ordered.length] ?? null;
+}
+
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<Dashboard | null>(null);
@@ -93,13 +125,8 @@ export function App() {
         <button className="text-button" onClick={() => void userManager.signoutRedirect()}>Sign out</button>
       </header>
       <main>
-        <section className="hero">
-          <p className="eyebrow">Your quiet corner</p>
-          <h1>Remember well.<br /><em>Read slowly.</em></h1>
-          <p>{data ? `Times are kept in ${data.profile.timezone}.` : "Gathering your reminders…"}</p>
-        </section>
         {error && <p className="error">{error}</p>}
-        {busy && <p className="loading">Opening the book…</p>}
+        {busy && <section className="hero compact-hero"><p className="eyebrow">Your quiet corner</p><h1>Opening the book…</h1></section>}
         {data && <DashboardView data={data} refresh={loadDashboard} onError={setError} />}
       </main>
     </div>
@@ -107,18 +134,50 @@ export function App() {
 }
 
 function DashboardView({ data, refresh, onError }: { data: Dashboard; refresh: () => Promise<void>; onError: (value: string) => void }) {
-  const [tab, setTab] = useState<"birthdays" | "poems" | "settings">("birthdays");
+  const [tab, setTab] = useState<"home" | "birthdays" | "poems" | "settings">("home");
   return (
     <>
       <nav className="tabs" aria-label="Sections">
-        {(["birthdays", "poems", "settings"] as const).map((item) => (
+        {(["home", "birthdays", "poems", "settings"] as const).map((item) => (
           <button className={tab === item ? "active" : ""} onClick={() => setTab(item)} key={item}>{item}</button>
         ))}
       </nav>
+      {tab === "home" && <Home profile={data.profile} birthdays={data.birthdays} poems={data.poems} onOpenPoems={() => setTab("poems")} />}
       {tab === "birthdays" && <Birthdays items={data.birthdays} refresh={refresh} onError={onError} />}
       {tab === "poems" && <Poems items={data.poems} refresh={refresh} onError={onError} />}
       {tab === "settings" && <Settings profile={data.profile} preferences={data.preferences} history={data.history} refresh={refresh} onError={onError} />}
     </>
+  );
+}
+
+function Home({ profile, birthdays, poems, onOpenPoems }: { profile: Profile; birthdays: Birthday[]; poems: Poem[]; onOpenPoems: () => void }) {
+  const poem = poemForToday(poems, profile.timezone);
+  const upcoming = upcomingBirthdayItems(birthdays, profile.timezone).slice(0, 3);
+  const firstName = (profile.display_name || profile.email.split("@")[0] || "there").trim().split(/\s+/)[0];
+  return (
+    <section className="home-page">
+      <div className="home-welcome">
+        <p className="eyebrow">Your quiet corner</p>
+        <h2>Hi, {firstName}.</h2>
+        <p>A little room for what matters.</p>
+      </div>
+      <article className="today-poem">
+        <p className="eyebrow">Your poem today</p>
+        {poem ? <>
+          <h2>{poem.title}</h2>
+          <p className="today-author">{poem.author || "Unknown author"}{poem.attribution_year ? ` · ${poem.attribution_year}` : ""}</p>
+          <p className="today-body">{poem.body}</p>
+          <button className="quiet-link" onClick={onOpenPoems}>Read in your library</button>
+        </> : <p className="empty">Your first poem will appear here when the shelf is ready.</p>}
+      </article>
+      <aside className="upcoming-birthdays">
+        <div><p className="eyebrow">Coming up</p><h2>Birthdays</h2></div>
+        {upcoming.length ? <div className="upcoming-list">{upcoming.map((birthday) => <article key={birthday.id} className="upcoming-birthday">
+          <div className={`date-tile ${birthdaySeason(birthday.birth_date)}`}><strong>{new Date(`${birthday.birth_date}T12:00:00`).getDate()}</strong><span>{new Date(`${birthday.birth_date}T12:00:00`).toLocaleString(undefined, { month: "short" })}</span></div>
+          <div><strong>{birthday.person_name}</strong><p>{birthday.relationship || "Someone dear"}</p></div>
+        </article>)}</div> : <p className="empty">No birthdays to hold yet.</p>}
+      </aside>
+    </section>
   );
 }
 
