@@ -13,7 +13,8 @@
     "ZITADEL_AUDIENCE": "390021886861484201",
     "ALLOWED_ORIGIN": "http://localhost:5173,https://poetic-ping.ashterix.com",
     "FROM_EMAIL": "Poetic Ping <onboarding@resend.dev>",
-    "FEEDBACK_EMAIL": "ashbladon@gmail.com"
+    "FEEDBACK_EMAIL": "ashbladon@gmail.com",
+    "FEEDBACK_URL": "https://api.poetic-ping.ashterix.com/feedback"
   },
   "routes": [
     {

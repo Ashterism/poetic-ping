@@ -154,7 +154,7 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
     const poem = poems[0];
     if (!poem) throw new HttpError(422, "Add a poem before sending a test email.");
     const timestamp = new Date().toISOString();
-    const rows = await db<Array<{ id: string }>>(env, "delivery_history", {
+    const rows = await db<Array<{ id: string; feedback_token: string }>>(env, "delivery_history", {
       method: "POST",
       prefer: "return=representation",
       body: { user_id: identity.id, poem_id: poem.id, delivery_type: "weekly_poem", recipient_email: profile.email, scheduled_for: timestamp, idempotency_key: `test:${identity.id}:${crypto.randomUUID()}` },
@@ -162,7 +162,7 @@ export async function handleApi(request: Request, env: Env, identity: Identity):
     const delivery = rows[0];
     if (!delivery) throw new HttpError(502, "The test delivery could not be recorded.");
     try {
-      const providerId = await sendEmail(env, profile, poem);
+      const providerId = await sendEmail(env, profile, poem, delivery.feedback_token);
       await db(env, "delivery_history", { method: "PATCH", query: { id: `eq.${delivery.id}` }, body: { status: "sent", sent_at: new Date().toISOString(), provider_id: providerId } });
       return { ok: true };
     } catch (cause) {

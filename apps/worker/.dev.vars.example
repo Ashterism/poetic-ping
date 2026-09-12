@@ -1,3 +1,4 @@
 SUPABASE_SECRET_KEY=your-supabase-secret-key
 RESEND_API_KEY=your-resend-api-key
 FEEDBACK_EMAIL=feedback@example.com
+FEEDBACK_URL=http://localhost:8787/feedback

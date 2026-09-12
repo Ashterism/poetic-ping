@@ -57,11 +57,12 @@ async function digestIndex(seed: string, length: number): Promise<number> {
 }
 
 async function selectPoem(env: Env, userId: string, tagIds: string[], seed: string): Promise<Poem | null> {
-  const [poems, recent] = await Promise.all([
+  const [poems, recent, declined] = await Promise.all([
     db<Poem[]>(env, "poems", { query: { select: "id,user_id,title,author,body,language,active", active: "eq.true", or: `(user_id.eq.${userId},user_id.is.null)` } }),
     db<Delivery[]>(env, "delivery_history", { query: { select: "id,poem_id,sent_at,status", user_id: `eq.${userId}`, status: "eq.sent", poem_id: "not.is.null", order: "sent_at.desc", limit: "5" } }),
+    db<Delivery[]>(env, "delivery_history", { query: { select: "poem_id", user_id: `eq.${userId}`, feedback_action: "eq.not_for_me", poem_id: "not.is.null" } }),
   ]);
-  const excluded = new Set(recent.map((item) => item.poem_id).filter((id): id is string => Boolean(id)));
+  const excluded = new Set([...recent, ...declined].map((item) => item.poem_id).filter((id): id is string => Boolean(id)));
   let candidates = poems.filter((poem) => !excluded.has(poem.id));
   if (tagIds.length && candidates.length) {
     const joins = await db<PoemTag[]>(env, "poem_tags", { query: { select: "poem_id,tag_id", tag_id: `in.(${tagIds.join(",")})`, poem_id: `in.(${candidates.map((poem) => poem.id).join(",")})` } });
@@ -92,8 +93,11 @@ async function deliver(env: Env, profile: Profile, values: { birthday?: Birthday
   if (values.type === "weekly_poem" && !poem) return false;
   const deliveryId = await claim(env, { userId: profile.id, birthdayId: values.birthday?.id ?? null, poemId: poem?.id ?? null, type: values.type, email: profile.email, scheduledFor: values.at.toISOString(), key: values.key });
   if (!deliveryId) return false;
+  const rows = await db<Array<{ feedback_token: string }>>(env, "delivery_history", { query: { select: "feedback_token", id: `eq.${deliveryId}`, limit: "1" } });
+  const feedbackToken = rows[0]?.feedback_token;
+  if (!feedbackToken) return false;
   try {
-    const providerId = await sendEmail(env, profile, poem, values.birthday);
+    const providerId = await sendEmail(env, profile, poem, feedbackToken, values.birthday);
     await finish(env, deliveryId, "sent", providerId);
     return true;
   } catch (cause) {
