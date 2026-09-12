@@ -19,7 +19,7 @@ export async function sendEmail(env: Env, profile: Profile, poem: Poem | null, b
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: env.FROM_EMAIL, to: [profile.email], reply_to: env.FEEDBACK_EMAIL, subject, html: `<div style="font-family:Georgia,serif;max-width:620px;margin:auto;color:#28241f">${intro}${poemHtml}${feedback}<p style="margin-top:32px;color:#81776d">Poetic Ping</p></div>` }),
+    body: JSON.stringify({ from: env.FROM_EMAIL, to: [profile.email], subject, html: `<div style="font-family:Georgia,serif;max-width:620px;margin:auto;color:#28241f">${intro}${poemHtml}${feedback}<p style="margin-top:32px;color:#81776d">Poetic Ping</p></div>` }),
   });
   const result = await response.json<{ id?: string; message?: string }>();
   if (!response.ok || !result.id) throw new Error(result.message ?? `Email provider returned ${response.status}.`);
