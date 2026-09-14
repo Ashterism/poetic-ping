@@ -135,6 +135,7 @@ export function App() {
 
 function DashboardView({ data, refresh, onError }: { data: Dashboard; refresh: () => Promise<void>; onError: (value: string) => void }) {
   const [tab, setTab] = useState<"home" | "birthdays" | "poems" | "settings">("home");
+  const [focusPoemId, setFocusPoemId] = useState<string | null>(null);
   return (
     <>
       <nav className="tabs" aria-label="Sections">
@@ -142,15 +143,15 @@ function DashboardView({ data, refresh, onError }: { data: Dashboard; refresh: (
           <button className={tab === item ? "active" : ""} onClick={() => setTab(item)} key={item}>{item}</button>
         ))}
       </nav>
-      {tab === "home" && <Home profile={data.profile} birthdays={data.birthdays} poems={data.poems} onOpenPoems={() => setTab("poems")} />}
+      {tab === "home" && <Home profile={data.profile} birthdays={data.birthdays} poems={data.poems} onOpenPoems={(poemId) => { setFocusPoemId(poemId); setTab("poems"); }} />}
       {tab === "birthdays" && <Birthdays items={data.birthdays} refresh={refresh} onError={onError} />}
-      {tab === "poems" && <Poems items={data.poems} refresh={refresh} onError={onError} />}
+      {tab === "poems" && <Poems items={data.poems} refresh={refresh} onError={onError} focusPoemId={focusPoemId} />}
       {tab === "settings" && <Settings profile={data.profile} preferences={data.preferences} history={data.history} refresh={refresh} onError={onError} />}
     </>
   );
 }
 
-function Home({ profile, birthdays, poems, onOpenPoems }: { profile: Profile; birthdays: Birthday[]; poems: Poem[]; onOpenPoems: () => void }) {
+function Home({ profile, birthdays, poems, onOpenPoems }: { profile: Profile; birthdays: Birthday[]; poems: Poem[]; onOpenPoems: (poemId: string) => void }) {
   const poem = poemForToday(poems, profile.timezone);
   const upcoming = upcomingBirthdayItems(birthdays, profile.timezone).slice(0, 3);
   const firstName = (profile.display_name || profile.email.split("@")[0] || "there").trim().split(/\s+/)[0];
@@ -167,7 +168,7 @@ function Home({ profile, birthdays, poems, onOpenPoems }: { profile: Profile; bi
           <h2>{poem.title}</h2>
           <p className="today-author">{poem.author || "Unknown author"}{poem.attribution_year ? ` · ${poem.attribution_year}` : ""}</p>
           <p className="today-body">{poem.body}</p>
-          <button className="quiet-link" onClick={onOpenPoems}>Read in your library</button>
+          <button className="quiet-link" onClick={() => onOpenPoems(poem.id)}>Read in your library</button>
         </> : <p className="empty">Your first poem will appear here when the shelf is ready.</p>}
       </article>
       <aside className="upcoming-birthdays">
@@ -216,11 +217,12 @@ function Birthdays({ items, refresh, onError }: { items: Birthday[]; refresh: ()
   );
 }
 
-function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Promise<void>; onError: (value: string) => void }) {
+function Poems({ items, refresh, onError, focusPoemId }: { items: Poem[]; refresh: () => Promise<void>; onError: (value: string) => void; focusPoemId: string | null }) {
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<"all" | "public" | "private">("all");
   const [category, setCategory] = useState("all");
   const [order, setOrder] = useState<"title" | "author" | "year" | "access">("title");
+  const [openPoemId, setOpenPoemId] = useState<string | null>(focusPoemId);
   const categories = [...new Set(items.flatMap((poem) => poem.tags.map((tag) => tag.name)))].sort();
   const visible = useMemo(() => items.filter((poem) => {
     const searchable = `${poem.title} ${poem.author ?? ""} ${poem.body} ${poem.tags.map((tag) => tag.name).join(" ")}`.toLowerCase();
@@ -246,7 +248,7 @@ function Poems({ items, refresh, onError }: { items: Poem[]; refresh: () => Prom
     <section className="panel-grid">
       <div className="card list-card"><div className="section-title"><div><p className="eyebrow">Your collection</p><h2>Poems</h2></div><span>{visible.length}</span></div>
         <div className="library-filters"><input aria-label="Search poems" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, poet, category…" /><select aria-label="Access filter" value={visibility} onChange={(event) => setVisibility(event.target.value as "all" | "public" | "private")}><option value="all">All access</option><option value="public">Shared catalogue</option><option value="private">My private poems</option></select><select aria-label="Category filter" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((name) => <option key={name}>{name}</option>)}</select><select aria-label="Sort poems" value={order} onChange={(event) => setOrder(event.target.value as "title" | "author" | "year" | "access")}><option value="title">Title A–Z</option><option value="author">Poet A–Z</option><option value="year">Year, oldest first</option><option value="access">Access type</option></select></div>
-        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : visible.length === 0 ? <p className="empty">No poems match those filters.</p> : visible.map((poem) => <article className="poem" key={poem.id}><details><summary><div className="poem-heading"><div><h3>{poem.title}</h3><p className="byline">{[poem.author || "Unknown author", poem.attribution_year].filter(Boolean).join(" · ")}</p></div><span className={`access ${poem.access_type}`}>{poem.access_type === "public" ? "Shared" : "Private"}</span></div></summary><div className="poem-content"><p>{poem.body}</p>{poem.explainer && <details className="poem-explainer"><summary>About this poem</summary><p>{poem.explainer}</p></details>}{(poem.source_title || poem.source_url) && <p className="source">{poem.source_title ? `Source: ${poem.source_title}` : "Source"}{poem.source_section ? ` · ${poem.source_section}` : ""}{poem.source_page ? ` · p. ${poem.source_page}` : ""}{poem.source_url && <> · <a href={poem.source_url} target="_blank" rel="noreferrer">Open source</a></>}</p>}<div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></div></details></article>)}
+        {items.length === 0 ? <p className="empty">Your shelf is waiting for its first poem.</p> : visible.length === 0 ? <p className="empty">No poems match those filters.</p> : visible.map((poem) => <article className="poem" key={poem.id}><details open={openPoemId === poem.id} onToggle={(event) => setOpenPoemId(event.currentTarget.open ? poem.id : null)}><summary><div className="poem-heading"><div><h3>{poem.title}</h3><p className="byline">{[poem.author || "Unknown author", poem.attribution_year].filter(Boolean).join(" · ")}</p></div><span className={`access ${poem.access_type}`}>{poem.access_type === "public" ? "Shared" : "Private"}</span></div></summary><div className="poem-content"><p>{poem.body}</p>{poem.explainer && <details className="poem-explainer"><summary>About this poem</summary><p>{poem.explainer}</p></details>}{(poem.source_title || poem.source_url) && <p className="source">{poem.source_title ? `Source: ${poem.source_title}` : "Source"}{poem.source_section ? ` · ${poem.source_section}` : ""}{poem.source_page ? ` · p. ${poem.source_page}` : ""}{poem.source_url && <> · <a href={poem.source_url} target="_blank" rel="noreferrer">Open source</a></>}</p>}<div className="tag-row">{poem.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div></div></details></article>)}
       </div>
       <form className="card form-card" onSubmit={add}>
         <p className="eyebrow">A new page</p><h2>Add a poem</h2>
