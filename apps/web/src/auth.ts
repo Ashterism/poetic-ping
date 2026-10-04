@@ -4,6 +4,7 @@ const callbackUri = `${window.location.origin}/auth/callback`;
 const authority = import.meta.env.VITE_ZITADEL_AUTHORITY || "https://ashterix-mkjzns.eu1.zitadel.cloud";
 const clientId = import.meta.env.VITE_ZITADEL_CLIENT_ID || "390023471385649321";
 const audience = import.meta.env.VITE_ZITADEL_AUDIENCE || "390021886861484201";
+const apiOrigin = (import.meta.env.VITE_API_URL || "https://api.poetic-ping.ashterix.com").replace(/\/$/, "");
 
 export const userManager = new UserManager({
   authority,
@@ -20,4 +21,12 @@ export async function accessToken(): Promise<string> {
   const user = await userManager.getUser();
   if (!user || user.expired) throw new Error("Please sign in again.");
   return user.access_token;
+}
+
+export function forwardMcpOAuthCallback(): boolean {
+  if (window.location.pathname !== "/auth/callback") return false;
+  const params = new URLSearchParams(window.location.search);
+  if (!params.get("state")?.startsWith("poetic_state_")) return false;
+  window.location.replace(`${apiOrigin}/api/mcp/oauth/callback?${params.toString()}`);
+  return true;
 }

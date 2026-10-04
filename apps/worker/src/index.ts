@@ -3,6 +3,8 @@ import { handleApi } from "./api";
 import { runSchedule } from "./scheduler";
 import { HttpError } from "./types";
 import { recordEmailFeedback } from "./feedback";
+import { handleMcp } from "./mcp";
+import { handleOAuth, oauthMetadata, protectedResourceMetadata } from "./mcp-oauth";
 
 function cors(request: Request, env: Env): HeadersInit {
   const origin = request.headers.get("Origin") ?? "";
@@ -27,6 +29,10 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/health") return json({ ok: true, service: "poetic-ping-api", version: "db-key-fix-1" }, request, env);
     if (url.pathname === "/feedback" && request.method === "GET") return recordEmailFeedback(request, env);
+    if (request.method === "GET" && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/api/mcp"].includes(url.pathname)) return protectedResourceMetadata();
+    if (request.method === "GET" && ["/.well-known/oauth-authorization-server", "/.well-known/oauth-authorization-server/api/mcp/oauth", "/api/mcp/oauth/.well-known/oauth-authorization-server"].includes(url.pathname)) return oauthMetadata();
+    if (url.pathname === "/api/mcp") return handleMcp(request, env);
+    if (url.pathname.startsWith("/api/mcp/oauth/")) return handleOAuth(request, env, url.pathname.slice("/api/mcp/oauth/".length));
     if (url.pathname === "/__scheduled" && env.ENVIRONMENT === "production") return json({ error: "Not found." }, request, env, 404);
     if (!url.pathname.startsWith("/api/")) return json({ error: "Not found." }, request, env, 404);
     try {

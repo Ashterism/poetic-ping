@@ -1,4 +1,5 @@
 SUPABASE_SECRET_KEY=your-supabase-secret-key
+POETIC_PING_MCP_OAUTH_SECRET=optional-separate-random-secret-at-least-32-characters
 RESEND_API_KEY=your-resend-api-key
 FEEDBACK_EMAIL=feedback@example.com
 FEEDBACK_URL=http://localhost:8787/feedback

@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "oidc-client-ts";
 import { api, Birthday, Delivery, Poem, Preferences, Profile } from "./api";
-import { userManager } from "./auth";
+import { forwardMcpOAuthCallback, userManager } from "./auth";
 
 type Dashboard = {
   profile: Profile;
@@ -90,6 +90,7 @@ export function App() {
 
   useEffect(() => {
     const start = async () => {
+      if (forwardMcpOAuthCallback()) return;
       if (window.location.pathname === "/auth/callback") {
         await userManager.signinRedirectCallback();
         window.history.replaceState({}, "", "/");

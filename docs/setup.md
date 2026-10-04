@@ -67,6 +67,7 @@ Update the placeholder values in `apps/worker/wrangler.jsonc`, then add secrets 
 cd apps/worker
 npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put POETIC_PING_MCP_OAUTH_SECRET
 npx wrangler types worker-configuration.d.ts
 npx wrangler deploy --dry-run
 ```
@@ -82,6 +83,14 @@ These explicit workspace commands keep the Worker build independent from the Pag
 The checked-in schedule is every 15 minutes. Cloudflare Cron is UTC-only, so each sweep converts the instant into every user's IANA timezone. A 30-minute due window plus a unique database idempotency key protects against Cron drift and at-least-once execution.
 
 When the dry run, test suite, and configuration values are correct, deploy the Worker. Then set `VITE_API_URL` on Pages to the Worker URL and deploy Pages.
+
+## 6. ChatGPT MCP
+
+The existing API Worker exposes a stateless Streamable HTTP MCP at `https://api.poetic-ping.ashterix.com/api/mcp`. It provides `search_poems`, `get_poem`, and `add_poem`; all tool calls require the existing Poetic Ping ZITADEL sign-in. The OAuth bridge uses dynamic client registration and PKCE, then reuses the existing public frontend client and its registered `https://poetic-ping.ashterix.com/auth/callback` redirect. The frontend hands only bridge-prefixed callback states back to the API. Do not register ChatGPT callback URLs in ZITADEL and do not configure bearer tokens or custom headers in ChatGPT.
+
+`POETIC_PING_MCP_OAUTH_SECRET` is an optional, preferred dedicated encryption secret. If it is absent, the bridge derives its encrypted state/token keys from the existing server-side `SUPABASE_SECRET_KEY`; rotating whichever secret is selected requires reconnecting MCP clients. `POETIC_PING_MCP_ZITADEL_CLIENT_ID` may select another already-configured public PKCE client later, but the existing frontend client is the default and no separate MCP client is required.
+
+In ChatGPT, use Settings > Plugins > Add > Create MCP App and point it directly to the MCP URL with automatic OAuth discovery.
 
 ## Security model
 
