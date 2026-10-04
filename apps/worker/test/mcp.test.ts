@@ -83,6 +83,25 @@ describe("Poetic Ping MCP", () => {
     expect(result.poems.map((poem: any) => poem.title)).toEqual(["Shared Moon", "Private Moon"]);
   });
 
+  it("gets a poem only through the shared-or-authenticated-owner filter", async () => {
+    const poem = { id: "22222222-2222-4222-8222-222222222222", user_id: "user-1", title: "Private Moon", author: "B", body: "quiet", language: "en", active: true, access_type: "private", source_type: null, source_title: null, source_section: null, source_page: null, source_url: null, rights_note: null, attribution_year: null, explainer: null };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/oauth/v2/keys")) return Response.json({ keys: [jwk] });
+      if (url.pathname.endsWith("/rest/v1/poems")) {
+        expect(url.searchParams.get("id")).toBe(`eq.${poem.id}`);
+        expect(url.searchParams.get("or")).toBe("(user_id.eq.user-1,user_id.is.null)");
+        return Response.json([poem]);
+      }
+      if (url.pathname.endsWith("/rest/v1/poem_tags")) return Response.json([]);
+      throw new Error(`Unexpected fetch ${url}`);
+    }));
+    const response = await send({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "get_poem", arguments: { poem_id: poem.id } } }, `Bearer ${await token()}`);
+    const result = (await response.json() as any).result.structuredContent;
+    expect(result.poem.id).toBe(poem.id);
+    expect(result.poem.user_id).toBe("user-1");
+  });
+
   it("derives add_poem ownership from the token and rejects a supplied user_id", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
